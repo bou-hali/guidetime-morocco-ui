@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Tourist Device — GuideTime Morocco</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #3730f5;
+    --blue-light: #6b66ff;
+    --amber: #f59e0b;
+    --green: #22c55e;
+    --red: #ef4444;
+    --bg: #0a0a12;
+    --surface: #12121e;
+    --surface2: #1c1c2e;
+    --border: #2a2a40;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(55,48,245,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(55,48,245,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    width: 44px; height: 44px;
+    background: var(--blue);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+  }
+
+  header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  header span {
+    color: var(--blue-light);
+  }
+
+  .badge {
+    margin-left: auto;
+    background: rgba(55,48,245,0.15);
+    border: 1px solid rgba(55,48,245,0.3);
+    color: var(--blue-light);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 100px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Main grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* Device Card */
+  .device-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 1.5rem;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .device-title {
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+  }
+
+  /* ESP32 Visual */
+  .device-visual {
+    background: #0d1117;
+    border: 2px solid #1e2530;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .device-visual::before {
+    content: 'ESP32';
+    position: absolute;
+    top: 0.5rem; right: 0.8rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: #2a3540;
+    letter-spacing: 0.1em;
+  }
+
+  .chip {
+    background: linear-gradient(135deg, #1a2535, #0f1820);
+    border: 1px solid #2a3a4a;
+    border-radius: 8px;
+    width: 80px; height: 60px;
+    margin: 0 auto 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 0 20px rgba(55,48,245,0.1);
+  }
+
+  .chip::before, .chip::after {
+    content: '';
+    position: absolute;
+    background: #1a2535;
+    width: 6px; height: 28px;
+  }
+  .chip::before { left: -7px; border-radius: 2px 0 0 2px; }
+  .chip::after { right: -7px; border-radius: 0 2px 2px 0; }
+
+  .chip-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.5rem;
+    color: #3a5570;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* LED indicators */
+  .leds {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .led {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .led-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    transition: all 0.3s;
+  }
+
+  .led-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.45rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .led-dot.power { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .led-dot.gps { background: #888; }
+  .led-dot.gps.active { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .led-dot.bt { background: #888; }
+  .led-dot.bt.active { background: var(--blue-light); box-shadow: 0 0 8px var(--blue-light); }
+  .led-dot.sos { background: #888; }
+  .led-dot.sos.active { background: var(--red); box-shadow: 0 0 8px var(--red); animation: blink 0.5s infinite; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* Sensors row */
+  .sensors {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .sensor-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem;
+  }
+
+  .sensor-label {
+    font-size: 0.6rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .sensor-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .sensor-value.highlight { color: var(--amber); }
+  .sensor-value.blue { color: var(--blue-light); }
+  .sensor-value.green { color: var(--green); }
+
+  /* Action buttons on device */
+  .device-buttons {
+    display: flex;
+    gap: 0.8rem;
+  }
+
+  .btn-device {
+    flex: 1;
+    padding: 0.7rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .btn-gps {
+    background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.3);
+    color: var(--amber);
+  }
+  .btn-gps:hover { background: rgba(245,158,11,0.25); transform: translateY(-1px); }
+
+  .btn-sos {
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: var(--red);
+  }
+  .btn-sos:hover { background: rgba(239,68,68,0.25); transform: translateY(-1px); }
+
+  .btn-pair {
+    background: rgba(55,48,245,0.15);
+    border: 1px solid rgba(55,48,245,0.3);
+    color: var(--blue-light);
+  }
+  .btn-pair:hover { background: rgba(55,48,245,0.25); transform: translateY(-1px); }
+
+  /* Right panel */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Flow diagram */
+  .flow-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .card-header h2 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .card-header .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 6px var(--blue);
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .flow-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-align: center;
+    flex: 1;
+    min-width: 90px;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .flow-step.active {
+    border-color: var(--blue);
+    background: rgba(55,48,245,0.1);
+    color: var(--blue-light);
+    box-shadow: 0 0 12px rgba(55,48,245,0.2);
+  }
+
+  .flow-step .step-icon {
+    font-size: 1.2rem;
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  .flow-step .step-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+  }
+
+  .flow-arrow {
+    color: var(--muted);
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* Terminal / Log */
+  .terminal {
+    background: #050810;
+    border: 1px solid #1a1a2e;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .terminal-header {
+    background: #0d0f1a;
+    padding: 0.7rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid #1a1a2e;
+  }
+
+  .terminal-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  .terminal-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-left: 0.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .terminal-body {
+    padding: 1rem;
+    height: 200px;
+    overflow-y: auto;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    line-height: 1.8;
+  }
+
+  .terminal-body::-webkit-scrollbar { width: 4px; }
+  .terminal-body::-webkit-scrollbar-track { background: transparent; }
+  .terminal-body::-webkit-scrollbar-thumb { background: #2a2a40; border-radius: 2px; }
+
+  .log-line { display: block; }
+  .log-time { color: #3a3a5a; }
+  .log-ok { color: var(--green); }
+  .log-info { color: var(--blue-light); }
+  .log-warn { color: var(--amber); }
+  .log-error { color: var(--red); }
+  .log-data { color: #a0a0c0; }
+
+  /* Audio guide panel */
+  .audio-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem;
+  }
+
+  .audio-player {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .audio-icon {
+    width: 44px; height: 44px;
+    background: rgba(55,48,245,0.15);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    border: 1px solid rgba(55,48,245,0.3);
+    flex-shrink: 0;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .audio-icon:hover { background: rgba(55,48,245,0.3); }
+  .audio-icon.playing { background: var(--blue); box-shadow: 0 0 16px rgba(55,48,245,0.5); }
+
+  .audio-info { flex: 1; }
+  .audio-title { font-size: 0.78rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .audio-sub { font-size: 0.65rem; color: var(--muted); }
+
+  .audio-wave {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 24px;
+  }
+
+  .wave-bar {
+    width: 3px;
+    background: var(--blue-light);
+    border-radius: 2px;
+    opacity: 0.3;
+    transition: all 0.1s;
+  }
+
+  .wave-bar.active {
+    opacity: 1;
+    animation: wave 0.8s ease-in-out infinite;
+  }
+
+  @keyframes wave {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+  }
+
+  /* GPS Map placeholder */
+  .map-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem;
+  }
+
+  .map-visual {
+    background: #0a0f15;
+    border: 1px solid #1a2530;
+    border-radius: 12px;
+    height: 160px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 1rem;
+  }
+
+  /* Grid lines for map */
+  .map-visual::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(55,48,245,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(55,48,245,0.06) 1px, transparent 1px);
+    background-size: 30px 30px;
+  }
+
+  .map-pin {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .map-pin-dot {
+    width: 14px; height: 14px;
+    background: var(--blue);
+    border-radius: 50%;
+    border: 3px solid rgba(55,48,245,0.3);
+    margin: 0 auto;
+    box-shadow: 0 0 0 6px rgba(55,48,245,0.1);
+    animation: pulse-pin 2s infinite;
+  }
+
+  @keyframes pulse-pin {
+    0%,100% { box-shadow: 0 0 0 6px rgba(55,48,245,0.1); }
+    50% { box-shadow: 0 0 0 14px rgba(55,48,245,0.03); }
+  }
+
+  .map-pin-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--blue-light);
+    margin-top: 0.4rem;
+    white-space: nowrap;
+    background: rgba(10,15,21,0.8);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+  }
+
+  /* nearby landmarks */
+  .landmark {
+    position: absolute;
+    font-size: 0.6rem;
+  }
+
+  .landmark-dot {
+    width: 8px; height: 8px;
+    background: var(--amber);
+    border-radius: 50%;
+    margin: 0 auto;
+    opacity: 0.7;
+  }
+
+  .landmark-name {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.45rem;
+    color: var(--amber);
+    opacity: 0.7;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  /* BLE connection bar */
+  .ble-bar {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .ble-icon { font-size: 1rem; }
+  .ble-info { flex: 1; }
+  .ble-label { font-size: 0.72rem; font-weight: 600; }
+  .ble-sub { font-size: 0.62rem; color: var(--muted); }
+
+  .signal-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 16px;
+  }
+
+  .signal-bar {
+    width: 4px;
+    background: var(--muted);
+    border-radius: 1px;
+  }
+
+  .signal-bar:nth-child(1) { height: 4px; }
+  .signal-bar:nth-child(2) { height: 8px; }
+  .signal-bar:nth-child(3) { height: 12px; }
+  .signal-bar:nth-child(4) { height: 16px; }
+
+  .signal-bar.active { background: var(--blue-light); }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem;
+  }
+
+  .stat-icon { font-size: 1.3rem; margin-bottom: 0.5rem; }
+  .stat-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 0.2rem;
+  }
+  .stat-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.03em;
+  }
+
+  /* Simulate button */
+  .simulate-btn {
+    width: 100%;
+    padding: 0.9rem;
+    background: var(--blue);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+    margin-top: 1rem;
+    box-shadow: 0 4px 20px rgba(55,48,245,0.3);
+  }
+
+  .simulate-btn:hover {
+    background: var(--blue-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(55,48,245,0.4);
+  }
+
+  .simulate-btn:active { transform: translateY(0); }
+
+  .simulate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* SOS alert */
+  .sos-alert {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    display: none;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 1rem;
+    animation: slide-in 0.3s ease;
+  }
+
+  .sos-alert.visible { display: flex; }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .sos-alert-text { font-size: 0.75rem; }
+  .sos-alert-title { font-weight: 700; color: var(--red); margin-bottom: 0.1rem; }
+  .sos-alert-sub { color: var(--muted); font-size: 0.65rem; }
+
+  .sos-dismiss {
+    margin-left: auto;
+    background: none;
+    border: 1px solid rgba(239,68,68,0.3);
+    color: var(--red);
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.65rem;
+    cursor: pointer;
+    font-family: 'Sora', sans-serif;
+  }
+
+  /* Offline badge */
+  .offline-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    margin-top: 0.8rem;
+  }
+
+  .toggle-switch {
+    width: 36px; height: 20px;
+    background: var(--border);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch.on { background: var(--blue); }
+
+  .toggle-knob {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 14px; height: 14px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle-switch.on .toggle-knob { transform: translateX(16px); }
+
+  .toggle-label { font-size: 0.72rem; font-weight: 600; }
+  .toggle-sub { font-size: 0.6rem; color: var(--muted); }
+
+  /* Bottom section */
+  .arch-section {
+    margin-top: 2rem;
+  }
+
+  .arch-title {
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .arch-blocks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .arch-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.2rem;
+  }
+
+  .arch-block-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .arch-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-left: auto;
+  }
+
+  .tag-c { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+  .tag-mobile { background: rgba(55,48,245,0.15); color: var(--blue-light); border: 1px solid rgba(55,48,245,0.2); }
+  .tag-backend { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+
+  .arch-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .arch-item::before {
+    content: '›';
+    color: var(--blue-light);
+    font-weight: bold;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">⚡</div>
+    <div>
+      <h1>GuideTime <span>Smart Device</span></h1>
+      <div style="font-size:0.65rem; color:var(--muted); margin-top:0.1rem; font-family:'Space Mono',monospace;">IoT Tourist Assistant — Simulation</div>
+    </div>
+    <div class="badge">v1.0.0 — PROTOTYPE</div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">📡</div>
+      <div class="stat-value" id="stat-gps">OFF</div>
+      <div class="stat-label">GPS STATUS</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🔋</div>
+      <div class="stat-value" id="stat-battery">87%</div>
+      <div class="stat-label">BATTERY</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎧</div>
+      <div class="stat-value" id="stat-guides">0</div>
+      <div class="stat-label">AUDIO LOADED</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📍</div>
+      <div class="stat-value" id="stat-landmarks">0</div>
+      <div class="stat-label">LANDMARKS</div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- Device panel -->
+    <div>
+      <div class="device-card">
+        <div class="device-title">// HARDWARE UNIT</div>
+
+        <!-- ESP32 visual -->
+        <div class="device-visual">
+          <div class="chip">
+            <div class="chip-label">ESP32<br>WROOM</div>
+          </div>
+          <div class="leds">
+            <div class="led">
+              <div class="led-dot power" id="led-power"></div>
+              <div class="led-label">PWR</div>
+            </div>
+            <div class="led">
+              <div class="led-dot gps" id="led-gps"></div>
+              <div class="led-label">GPS</div>
+            </div>
+            <div class="led">
+              <div class="led-dot bt" id="led-bt"></div>
+              <div class="led-label">BLE</div>
+            </div>
+            <div class="led">
+              <div class="led-dot sos" id="led-sos"></div>
+              <div class="led-label">SOS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sensors -->
+        <div class="sensors">
+          <div class="sensor-box">
+            <div class="sensor-label">LAT</div>
+            <div class="sensor-value highlight" id="s-lat">--</div>
+          </div>
+          <div class="sensor-box">
+            <div class="sensor-label">LNG</div>
+            <div class="sensor-value highlight" id="s-lng">--</div>
+          </div>
+          <div class="sensor-box">
+            <div class="sensor-label">CITY</div>
+            <div class="sensor-value blue" id="s-city">--</div>
+          </div>
+          <div class="sensor-box">
+            <div class="sensor-label">SIGNAL</div>
+            <div class="sensor-value green" id="s-signal">--</div>
+          </div>
+        </div>
+
+        <!-- BLE bar -->
+        <div class="ble-bar">
+          <div class="ble-icon">📱</div>
+          <div class="ble-info">
+            <div class="ble-label" id="ble-status">Non connecté</div>
+            <div class="ble-sub">GuideTime App v2.1</div>
+          </div>
+          <div class="signal-bars">
+            <div class="signal-bar" id="sig1"></div>
+            <div class="signal-bar" id="sig2"></div>
+            <div class="signal-bar" id="sig3"></div>
+            <div class="signal-bar" id="sig4"></div>
+          </div>
+        </div>
+
+        <!-- Offline toggle -->
+        <div class="offline-toggle">
+          <div class="toggle-switch" id="offline-toggle" onclick="toggleOffline()">
+            <div class="toggle-knob"></div>
+          </div>
+          <div>
+            <div class="toggle-label">Mode Offline</div>
+            <div class="toggle-sub">Data stockée localement</div>
+          </div>
+        </div>
+
+        <!-- Device buttons -->
+        <div class="device-buttons" style="margin-top:1rem;">
+          <button class="btn-device btn-gps" onclick="activateGPS()">📡 GPS</button>
+          <button class="btn-device btn-pair" onclick="pairBLE()">📱 Pair</button>
+          <button class="btn-device btn-sos" onclick="triggerSOS()">🚨 SOS</button>
+        </div>
+
+        <button class="simulate-btn" id="sim-btn" onclick="runSimulation()">▶ Lancer Simulation</button>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="right-panel">
+
+      <!-- Flow diagram -->
+      <div class="flow-card">
+        <div class="card-header">
+          <div class="dot"></div>
+          <h2>Flux de Fonctionnement</h2>
+        </div>
+        <div class="flow-steps">
+          <div class="flow-step" id="step1">
+            <span class="step-icon">📡</span>
+            GPS Fix
+            <div class="step-label">NEO-6M</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" id="step2">
+            <span class="step-icon">📤</span>
+            Send BLE
+            <div class="step-label">ESP32</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" id="step3">
+            <span class="step-icon">📱</span>
+            App Reçoit
+            <div class="step-label">GuideTime</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" id="step4">
+            <span class="step-icon">🌐</span>
+            API Call
+            <div class="step-label">Backend</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" id="step5">
+            <span class="step-icon">🔊</span>
+            Audio Guide
+            <div class="step-label">Speaker</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal + Map -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+
+        <!-- Terminal -->
+        <div class="terminal">
+          <div class="terminal-header">
+            <div class="terminal-dot" style="background:#ff5f57"></div>
+            <div class="terminal-dot" style="background:#ffbd2e"></div>
+            <div class="terminal-dot" style="background:#28ca41"></div>
+            <div class="terminal-title">SERIAL MONITOR — 115200 BAUD</div>
+          </div>
+          <div class="terminal-body" id="terminal">
+            <span class="log-line"><span class="log-time">[BOOT] </span><span class="log-info">ESP32 initializing...</span></span>
+            <span class="log-line"><span class="log-time">[BOOT] </span><span class="log-ok">System ready. Waiting for GPS fix.</span></span>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="map-card" style="padding:1rem;">
+          <div class="card-header" style="margin-bottom:0.5rem;">
+            <div class="dot" style="background:var(--amber); box-shadow:0 0 6px var(--amber)"></div>
+            <h2 style="font-size:0.8rem;">Localisation GPS</h2>
+          </div>
+          <div class="map-visual" id="map-visual">
+            <div class="map-pin" id="map-pin" style="display:none;">
+              <div class="map-pin-dot"></div>
+              <div class="map-pin-label" id="map-city-label">Marrakech</div>
+            </div>
+
+            <div class="landmark" style="top:30%;left:25%;display:none;" id="lm1">
+              <div class="landmark-dot"></div>
+              <div class="landmark-name">Jemaa el-Fnaa</div>
+            </div>
+            <div class="landmark" style="top:60%;left:65%;display:none;" id="lm2">
+              <div class="landmark-dot"></div>
+              <div class="landmark-name">Koutoubia</div>
+            </div>
+            <div class="landmark" style="top:20%;left:70%;display:none;" id="lm3">
+              <div class="landmark-dot"></div>
+              <div class="landmark-name">Bahia Palace</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Audio guide -->
+      <div class="audio-card">
+        <div class="card-header">
+          <div class="dot" style="background:var(--green); box-shadow:0 0 6px var(--green)"></div>
+          <h2>Audio Guide — Speaker Output</h2>
+        </div>
+
+        <div class="audio-player" id="audio-player" style="opacity:0.4; pointer-events:none;">
+          <div class="audio-icon" id="audio-btn" onclick="toggleAudio()">🔊</div>
+          <div class="audio-info">
+            <div class="audio-title" id="audio-title">Chargement...</div>
+            <div class="audio-sub" id="audio-sub">En attente de la position GPS</div>
+          </div>
+          <div class="audio-wave" id="audio-wave">
+            <div class="wave-bar" style="height:8px;animation-delay:0s"></div>
+            <div class="wave-bar" style="height:14px;animation-delay:0.1s"></div>
+            <div class="wave-bar" style="height:10px;animation-delay:0.2s"></div>
+            <div class="wave-bar" style="height:18px;animation-delay:0.15s"></div>
+            <div class="wave-bar" style="height:12px;animation-delay:0.05s"></div>
+            <div class="wave-bar" style="height:16px;animation-delay:0.25s"></div>
+            <div class="wave-bar" style="height:8px;animation-delay:0.3s"></div>
+          </div>
+        </div>
+
+        <!-- SOS alert -->
+        <div class="sos-alert" id="sos-alert">
+          <span style="font-size:1.4rem">🚨</span>
+          <div class="sos-alert-text">
+            <div class="sos-alert-title">ALERTE SOS ACTIVÉE</div>
+            <div class="sos-alert-sub">Position envoyée au guide — Youssef El Mansouri • +212 661-123456</div>
+          </div>
+          <button class="sos-dismiss" onclick="dismissSOS()">Annuler</button>
+        </div>
+      </div>
+
+      <!-- Architecture -->
+      <div class="arch-section">
+        <div class="arch-title">// Architecture Technique</div>
+        <div class="arch-blocks">
+          <div class="arch-block">
+            <div class="arch-block-title">🔩 Embedded <span class="arch-tag tag-c">C / Arduino</span></div>
+            <div class="arch-item">ESP32 WROOM-32</div>
+            <div class="arch-item">GPS Module NEO-6M</div>
+            <div class="arch-item">Bluetooth BLE 4.2</div>
+            <div class="arch-item">Speaker I2S MAX98357</div>
+            <div class="arch-item">SOS Push Button</div>
+            <div class="arch-item">Li-Ion 3.7V 2500mAh</div>
+          </div>
+          <div class="arch-block">
+            <div class="arch-block-title">📱 Mobile App <span class="arch-tag tag-mobile">React Native</span></div>
+            <div class="arch-item">BLE GATT Communication</div>
+            <div class="arch-item">GPS Coordinate Parser</div>
+            <div class="arch-item">API Calls GuideTime</div>
+            <div class="arch-item">Audio Stream → Device</div>
+            <div class="arch-item">Offline Data Sync</div>
+            <div class="arch-item">SOS Emergency Alert</div>
+          </div>
+          <div class="arch-block">
+            <div class="arch-block-title">☁️ Backend API <span class="arch-tag tag-backend">Node.js</span></div>
+            <div class="arch-item">Geo-based Tour Lookup</div>
+            <div class="arch-item">Audio Guide Storage</div>
+            <div class="arch-item">Guide Emergency API</div>
+            <div class="arch-item">Offline Bundle Export</div>
+            <div class="arch-item">Real-time Tracking</div>
+            <div class="arch-item">Usage Analytics</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // State
+  let simRunning = false;
+  let gpsActive = false;
+  let bleConnected = false;
+  let audioPlaying = false;
+  let offlineMode = false;
+  let simStep = 0;
+
+  const locations = [
+    { city: 'Marrakech', lat: '31.6295', lng: '-7.9811', audio: 'Imperial Secrets of Marrakech', sub: 'Medina • Koutoubia • Jemaa el-Fnaa' },
+    { city: 'Fes', lat: '34.0181', lng: '-5.0078', audio: 'Fes El-Bali — Tanneries & Medina', sub: 'Ancient Medina • Chouara Tannery' },
+    { city: 'Chefchaouen', lat: '35.1688', lng: '-5.2636', audio: 'Blue Pearl Walking Tour', sub: 'Blue City • Kasbah • Medina' },
+  ];
+
+  let currentLocation = locations[0];
+
+  function log(msg, type = 'info') {
+    const terminal = document.getElementById('terminal');
+    const line = document.createElement('span');
+    line.className = 'log-line';
+    const now = new Date();
+    const ts = `[${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}]`;
+    line.innerHTML = `<span class="log-time">${ts} </span><span class="log-${type}">${msg}</span>`;
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  function setStep(n) {
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById(`step${i}`).classList.toggle('active', i === n);
+    }
+  }
+
+  function activateGPS() {
+    if (gpsActive) return;
+    log('GPS module NEO-6M powered ON...', 'warn');
+    document.getElementById('led-gps').classList.add('active');
+    document.getElementById('stat-gps').textContent = 'FIX...';
+    setStep(1);
+
+    // pick random location
+    currentLocation = locations[Math.floor(Math.random() * locations.length)];
+
+    setTimeout(() => {
+      gpsActive = true;
+      document.getElementById('s-lat').textContent = currentLocation.lat;
+      document.getElementById('s-lng').textContent = currentLocation.lng;
+      document.getElementById('s-city').textContent = currentLocation.city;
+      document.getElementById('s-signal').textContent = '-68 dBm';
+      document.getElementById('stat-gps').textContent = 'FIX ✓';
+      document.getElementById('stat-landmarks').textContent = '3';
+      document.getElementById('map-city-label').textContent = currentLocation.city;
+      document.getElementById('map-pin').style.display = 'block';
+      document.getElementById('lm1').style.display = 'block';
+      document.getElementById('lm2').style.display = 'block';
+      document.getElementById('lm3').style.display = 'block';
+      log(`GPS FIX acquired → ${currentLocation.city} (${currentLocation.lat}, ${currentLocation.lng})`, 'ok');
+    }, 1800);
+  }
+
+  function pairBLE() {
+    if (bleConnected) return;
+    log('Starting BLE pairing with GuideTime App...', 'info');
+    setStep(2);
+
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      document.getElementById(`sig${i}`).classList.add('active');
+      if (i >= 4) {
+        clearInterval(interval);
+        bleConnected = true;
+        document.getElementById('led-bt').classList.add('active');
+        document.getElementById('ble-status').textContent = 'Connecté — iPhone 15';
+        log('BLE GATT connection established → GuideTime App', 'ok');
+        setStep(3);
+      }
+    }, 300);
+  }
+
+  function triggerSOS() {
+    document.getElementById('led-sos').classList.add('active');
+    document.getElementById('sos-alert').classList.add('visible');
+    log('⚠ SOS BUTTON PRESSED — Emergency alert triggered!', 'error');
+    log(`GPS coordinates sent to guide: ${currentLocation.lat || '31.6295'}, ${currentLocation.lng || '-7.9811'}`, 'warn');
+    log('Notification sent to: Youssef El Mansouri (+212 661-123456)', 'ok');
+  }
+
+  function dismissSOS() {
+    document.getElementById('led-sos').classList.remove('active');
+    document.getElementById('sos-alert').classList.remove('visible');
+    log('SOS alert cancelled by user', 'info');
+  }
+
+  function toggleOffline() {
+    offlineMode = !offlineMode;
+    const el = document.getElementById('offline-toggle');
+    el.classList.toggle('on', offlineMode);
+    if (offlineMode) {
+      log('Offline mode ENABLED — Loading cached tour data...', 'warn');
+      setTimeout(() => log('Offline bundle loaded: 3 cities, 12 audio guides (47MB)', 'ok'), 800);
+    } else {
+      log('Offline mode DISABLED — Using live API', 'info');
+    }
+  }
+
+  function toggleAudio() {
+    audioPlaying = !audioPlaying;
+    const btn = document.getElementById('audio-btn');
+    const bars = document.querySelectorAll('.wave-bar');
+    btn.classList.toggle('playing', audioPlaying);
+    btn.textContent = audioPlaying ? '⏸' : '🔊';
+    bars.forEach((b, i) => {
+      b.classList.toggle('active', audioPlaying);
+      b.style.animationDelay = `${i * 0.08}s`;
+    });
+    if (audioPlaying) {
+      log(`Audio guide playing: "${currentLocation.audio}"`, 'ok');
+    } else {
+      log('Audio guide paused', 'info');
+    }
+  }
+
+  async function runSimulation() {
+    if (simRunning) return;
+    simRunning = true;
+    const btn = document.getElementById('sim-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Simulation en cours...';
+
+    log('=== SIMULATION DÉMARRÉE ===', 'ok');
+
+    // Step 1 - GPS
+    await delay(500);
+    activateGPS();
+    await delay(2200);
+
+    // Step 2 - BLE
+    setStep(2);
+    log('Sending GPS data via BLE GATT service...', 'info');
+    await delay(800);
+    pairBLE();
+    await delay(1500);
+
+    // Step 3 - App receives
+    setStep(3);
+    log('GuideTime App received: { lat, lng, city }', 'data');
+    await delay(700);
+
+    // Step 4 - API
+    setStep(4);
+    log(`API Request → GET /tours?city=${currentLocation.city}&nearby=true`, 'info');
+    await delay(1000);
+    log(`API Response → 200 OK: "${currentLocation.audio}"`, 'ok');
+    log('Audio guide file URL received (MP3 stream)', 'data');
+    document.getElementById('stat-guides').textContent = '1';
+    await delay(500);
+
+    // Step 5 - Audio
+    setStep(5);
+    log('Sending audio stream to ESP32 I2S speaker...', 'info');
+    await delay(600);
+
+    // Enable audio player
+    const player = document.getElementById('audio-player');
+    player.style.opacity = '1';
+    player.style.pointerEvents = 'auto';
+    document.getElementById('audio-title').textContent = currentLocation.audio;
+    document.getElementById('audio-sub').textContent = currentLocation.sub;
+
+    log(`Speaker OUTPUT: Playing "${currentLocation.audio}"`, 'ok');
+    toggleAudio();
+
+    await delay(500);
+    log('=== SIMULATION TERMINÉE AVEC SUCCÈS ===', 'ok');
+
+    btn.disabled = false;
+    btn.textContent = '↺ Relancer Simulation';
+    simRunning = false;
+    simStep = 0;
+
+    // reset for next run
+    gpsActive = false;
+    bleConnected = false;
+  }
+
+  function delay(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+</script>
+
+</body>
+</html>
